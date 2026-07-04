@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 100
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, pyupgrade, bugbear, flake8-django
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["*/migrations/*", "*/tests/*", "manage.py", "*/settings.py",
+        "*/wsgi.py", "*/asgi.py", "*/celery.py", ".venv/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
