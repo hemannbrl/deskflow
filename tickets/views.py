@@ -13,6 +13,7 @@ from .serializers import (
     TicketEventSerializer,
     TicketSerializer,
 )
+from .sla import due_at
 
 User = get_user_model()
 
@@ -37,7 +38,9 @@ class TicketViewSet(viewsets.ModelViewSet):
         return Ticket.objects.filter(requester=user)
 
     def perform_create(self, serializer):
-        serializer.save(requester=self.request.user)
+        ticket = serializer.save(requester=self.request.user)
+        ticket.sla_due_at = due_at(ticket.priority)
+        ticket.save(update_fields=["sla_due_at"])
 
     @action(detail=True, methods=["post"])
     def assign(self, request, pk=None):

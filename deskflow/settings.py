@@ -104,3 +104,8 @@ SPECTACULAR_SETTINGS = {
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 CELERY_TASK_TRACK_STARTED = True
+
+CELERY_BEAT_SCHEDULE = {
+    "sla-escalation": {"task": "tickets.tasks.run_sla_escalation", "schedule": 300.0},
+    "auto-close": {"task": "tickets.tasks.auto_close_resolved", "schedule": 3600.0},
+}
