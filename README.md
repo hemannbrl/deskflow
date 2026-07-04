@@ -6,6 +6,18 @@ IT help desk and ticketing API. Requesters open tickets, agents work them, and
 managers handle assignment and SLA breaches. Tickets move through a state machine and
 escalate automatically when their SLA deadline passes.
 
+## The app
+
+**Ticket queue** — role-scoped list with priorities and SLA breaches flagged
+![Ticket list](docs/screenshots/tickets.png)
+
+**Working a ticket** — audit timeline (including system escalations), internal notes,
+and role-gated actions
+![Ticket detail](docs/screenshots/ticket-detail.png)
+
+**Opening a ticket**
+![New ticket](docs/screenshots/new-ticket.png)
+
 ## Features
 
 - JWT-authenticated REST API
@@ -46,8 +58,11 @@ SLA windows by priority: urgent 4h, high 8h, normal 24h, low 72h.
 
 ## Documentation
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — components, data model, the state
-  machine, roles, and the SLA automation
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — components, the state machine,
+  roles, and the SLA automation
+- [`docs/DATABASE.md`](docs/DATABASE.md) — the tables and why the FK rules differ
+- [`docs/BUSINESS_LOGIC.md`](docs/BUSINESS_LOGIC.md) — the rules, transition table,
+  and invariants
 - [`docs/API.md`](docs/API.md) — endpoint reference with curl examples
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — configuration, production setup, and CI
 
