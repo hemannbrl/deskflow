@@ -14,7 +14,32 @@ class CommentVisibilityTests(APITestCase):
         Comment.objects.create(ticket=ticket, author=requester, body="hidden", is_internal=True)
 
         self.client.force_authenticate(requester)
-        r = self.client.get(f"/api/tickets/{ticket.id}/comments/")
+        r = self.client.get(f"/api/v1/tickets/{ticket.id}/comments/")
         bodies = [c["body"] for c in r.data]
         self.assertIn("public", bodies)
         self.assertNotIn("hidden", bodies)
+
+    def test_agent_sees_internal_notes(self):
+        requester = User.objects.create_user("req", password="x")
+        agent = User.objects.create_user("agent", password="x")
+        agent.profile.role = "agent"
+        agent.profile.save()
+        ticket = Ticket.objects.create(
+            title="t", description="d", requester=requester, status="assigned", assignee=agent
+        )
+        Comment.objects.create(ticket=ticket, author=agent, body="hidden", is_internal=True)
+
+        self.client.force_authenticate(agent)
+        r = self.client.get(f"/api/v1/tickets/{ticket.id}/comments/")
+        self.assertEqual([c["body"] for c in r.data], ["hidden"])
+
+    def test_post_comment_stamps_author_and_ticket(self):
+        requester = User.objects.create_user("req", password="x")
+        ticket = Ticket.objects.create(title="t", description="d", requester=requester)
+
+        self.client.force_authenticate(requester)
+        r = self.client.post(f"/api/v1/tickets/{ticket.id}/comments/", {"body": "any update?"})
+        self.assertEqual(r.status_code, 201)
+        comment = ticket.comments.get()
+        self.assertEqual(comment.author, requester)
+        self.assertEqual(comment.body, "any update?")

@@ -7,6 +7,8 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    """Create a user account; the password is write-only and stored hashed."""
+
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -18,6 +20,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class TicketSerializer(serializers.ModelSerializer):
+    """A ticket. Status and its timestamps only change via the action endpoints."""
+
     class Meta:
         model = Ticket
         fields = "__all__"
@@ -33,12 +37,16 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class TicketEventSerializer(serializers.ModelSerializer):
+    """One audit row per status change: actor, from/to status, optional note."""
+
     class Meta:
         model = TicketEvent
         fields = "__all__"
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """A comment on a ticket; internal comments are hidden from requesters."""
+
     class Meta:
         model = Comment
         fields = ("id", "ticket", "author", "body", "is_internal", "created_at")

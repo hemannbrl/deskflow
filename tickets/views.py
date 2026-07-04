@@ -19,16 +19,22 @@ User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
+    """Register a new user account."""
+
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
 
 class TicketViewSet(viewsets.ModelViewSet):
+    """Tickets, scoped by role: requesters see their own, agents their queue, managers all."""
+
     serializer_class = TicketSerializer
     permission_classes = [permissions.IsAuthenticated, IsManagerOrAssignedOrOwner]
     http_method_names = ["get", "post", "patch", "head", "options"]  # no PUT/DELETE
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation has no user
+            return Ticket.objects.none()
         user = self.request.user
         r = role(user)
         if r == "manager":
@@ -44,6 +50,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def assign(self, request, pk=None):
+        """Assign the ticket to a user (open -> assigned)."""
         ticket = self.get_object()
         assignee_id = request.data.get("assignee")
         if not assignee_id:
@@ -57,6 +64,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def escalate(self, request, pk=None):
+        """Escalate the ticket, with an optional note."""
         ticket = self.get_object()
         try:
             ticket.escalate(actor=request.user, note=request.data.get("note", ""))
@@ -66,6 +74,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def resolve(self, request, pk=None):
+        """Mark the ticket resolved (assigned/escalated -> resolved)."""
         ticket = self.get_object()
         try:
             ticket.resolve(actor=request.user)
@@ -75,6 +84,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def close(self, request, pk=None):
+        """Close a resolved ticket."""
         ticket = self.get_object()
         try:
             ticket.close(actor=request.user)
@@ -84,11 +94,13 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def events(self, request, pk=None):
+        """The ticket's audit history, oldest first."""
         events = self.get_object().events.all()
         return Response(TicketEventSerializer(events, many=True).data)
 
     @action(detail=True, methods=["get", "post"])
     def comments(self, request, pk=None):
+        """List the comment thread (internal notes hidden from requesters) or add a comment."""
         ticket = self.get_object()
         if request.method == "POST":
             serializer = CommentSerializer(data=request.data)

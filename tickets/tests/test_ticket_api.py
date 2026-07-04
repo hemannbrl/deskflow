@@ -16,7 +16,7 @@ class TicketScopeTests(APITestCase):
         Ticket.objects.create(title="theirs", description="d", requester=self.other)
         self.client.force_authenticate(self.requester)
 
-        r = self.client.get("/api/tickets/")
+        r = self.client.get("/api/v1/tickets/")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data), 1)
-        self.assertEqual(r.data[0]["title"], "mine")
+        self.assertEqual(r.data["count"], 1)
+        self.assertEqual(r.data["results"][0]["title"], "mine")
