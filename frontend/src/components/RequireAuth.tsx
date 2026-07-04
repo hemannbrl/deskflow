@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useAuth } from "../context/AuthContext";
+import { Spinner } from "./ui";
 
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -14,7 +15,7 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
   }, [loading, user, router]);
 
   if (loading || !user) {
-    return <p className="p-8 text-center text-zinc-500">Loading…</p>;
+    return <Spinner />;
   }
   return <>{children}</>;
 }

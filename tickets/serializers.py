@@ -32,6 +32,12 @@ class MeSerializer(serializers.ModelSerializer):
 class TicketSerializer(serializers.ModelSerializer):
     """A ticket. Status and its timestamps only change via the action endpoints."""
 
+    requester_username = serializers.CharField(source="requester.username", read_only=True)
+    assignee_username = serializers.SerializerMethodField()
+
+    def get_assignee_username(self, obj) -> str | None:
+        return obj.assignee.username if obj.assignee else None
+
     class Meta:
         model = Ticket
         fields = "__all__"
@@ -49,6 +55,11 @@ class TicketSerializer(serializers.ModelSerializer):
 class TicketEventSerializer(serializers.ModelSerializer):
     """One audit row per status change: actor, from/to status, optional note."""
 
+    actor_username = serializers.SerializerMethodField()
+
+    def get_actor_username(self, obj) -> str | None:
+        return obj.actor.username if obj.actor else None
+
     class Meta:
         model = TicketEvent
         fields = "__all__"
@@ -57,7 +68,9 @@ class TicketEventSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     """A comment on a ticket; internal comments are hidden from requesters."""
 
+    author_username = serializers.CharField(source="author.username", read_only=True)
+
     class Meta:
         model = Comment
-        fields = ("id", "ticket", "author", "body", "is_internal", "created_at")
+        fields = ("id", "ticket", "author", "author_username", "body", "is_internal", "created_at")
         read_only_fields = ("ticket", "author")

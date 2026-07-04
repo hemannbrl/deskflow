@@ -17,6 +17,8 @@ escalate automatically when their SLA deadline passes.
 - Automatic SLA escalation and auto-close of stale resolved tickets via scheduled Celery tasks
 - OpenAPI schema + Swagger UI
 - Versioned API (`/api/v1/`) with pagination and per-user/anon rate limits
+- Next.js web client (`frontend/`) with a role-aware UI: queues, internal notes,
+  and state-machine actions
 
 ## Tech Stack
 
@@ -28,6 +30,7 @@ escalate automatically when their SLA deadline passes.
 - drf-spectacular for the OpenAPI schema
 - python-dotenv for `.env` config
 - ruff + pre-commit + GitHub Actions CI
+- Next.js 16, React 19, TypeScript, Tailwind CSS 4 (web client)
 
 ## Architecture
 
@@ -69,6 +72,27 @@ API at http://localhost:8000/, admin at `/admin/`, interactive docs at `/api/doc
 
 To exercise the API: register at `/api/auth/register/`, get a JWT at `/api/auth/token/`,
 then open `/api/docs/`, click **Authorize**, and paste the access token.
+
+## Frontend
+
+The web client lives in `frontend/` and talks to the API above:
+
+```bash
+cd frontend
+npm install
+cp .env.local.example .env.local   # API base URL, default http://localhost:8000
+npm run dev                        # http://localhost:3000
+```
+
+Register as a requester and open tickets; promote a user to agent or manager (via the
+admin or shell) to see the queue, internal notes, and the assign/escalate/resolve/close
+actions. The UI only decides which controls to *render* — every rule is enforced by the
+API, and the client surfaces its errors.
+
+Auth note: JWTs are kept in `localStorage` with an automatic refresh-and-retry on 401.
+That's a deliberate simplification — httpOnly cookies would resist XSS better but need a
+different backend auth flow; for this project the SPA-style token flow keeps the API
+unchanged.
 
 ## Running Tests
 
@@ -123,3 +147,6 @@ GET    /api/docs/                   Swagger UI
 - **Signals for invariants.** Auto-creating a `Profile` on user creation keeps
   "every user has a role" true everywhere — tests, admin, shell — without remembering
   to call anything.
+- **The UI offers, the API decides.** The frontend renders buttons based on role and
+  status, but never enforces a rule itself — illegal moves still get a 400 from the
+  server, and the client just shows it. One authority, no drift.
