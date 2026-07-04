@@ -19,6 +19,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
+class MeSerializer(serializers.ModelSerializer):
+    """The authenticated user and their role."""
+
+    role = serializers.CharField(source="profile.role", read_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "role")
+
+
 class TicketSerializer(serializers.ModelSerializer):
     """A ticket. Status and its timestamps only change via the action endpoints."""
 

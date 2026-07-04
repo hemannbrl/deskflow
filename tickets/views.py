@@ -9,6 +9,7 @@ from .models import Ticket, TransitionError
 from .permissions import IsManagerOrAssignedOrOwner, role
 from .serializers import (
     CommentSerializer,
+    MeSerializer,
     RegisterSerializer,
     TicketEventSerializer,
     TicketSerializer,
@@ -23,6 +24,15 @@ class RegisterView(generics.CreateAPIView):
 
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class MeView(generics.RetrieveAPIView):
+    """The authenticated user's account and role."""
+
+    serializer_class = MeSerializer
+
+    def get_object(self):
+        return self.request.user
 
 
 class TicketViewSet(viewsets.ModelViewSet):

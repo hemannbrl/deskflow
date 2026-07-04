@@ -86,6 +86,8 @@ POST   /api/auth/register/          register a user
 POST   /api/auth/token/             obtain JWT
 POST   /api/auth/token/refresh/     refresh JWT
 
+GET    /api/v1/me/                     current user + role
+
 GET    /api/v1/tickets/                list (role-filtered, paginated)
 POST   /api/v1/tickets/                create
 GET    /api/v1/tickets/{id}/           retrieve

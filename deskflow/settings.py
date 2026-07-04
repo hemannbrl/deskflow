@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_spectacular",
+    "corsheaders",
     "tickets",
 ]
 
@@ -28,6 +29,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -123,6 +125,10 @@ CELERY_BEAT_SCHEDULE = {
     "sla-escalation": {"task": "tickets.tasks.run_sla_escalation", "schedule": 300.0},
     "auto-close": {"task": "tickets.tasks.auto_close_resolved", "schedule": 3600.0},
 }
+
+
+# CORS — the browser frontend's origin(s)
+CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
 
 
 # Security — hardened via env so local dev stays easy
