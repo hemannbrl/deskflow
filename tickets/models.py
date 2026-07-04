@@ -1,5 +1,20 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
+from django.utils import timezone
+
+
+class TransitionError(Exception):
+    pass
+
+
+ALLOWED = {
+    ("open", "assigned"),
+    ("open", "escalated"),
+    ("assigned", "resolved"),
+    ("assigned", "escalated"),
+    ("escalated", "resolved"),
+    ("resolved", "closed"),
+}
 
 
 class Profile(models.Model):
@@ -63,3 +78,65 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f"#{self.pk} {self.title}"
+
+    def _transition(self, to_status, actor=None, note=""):
+        if (self.status, to_status) not in ALLOWED:
+            raise TransitionError(f"cannot go {self.status} -> {to_status}")
+        with transaction.atomic():
+            TicketEvent.objects.create(
+                ticket=self,
+                actor=actor,
+                from_status=self.status,
+                to_status=to_status,
+                note=note,
+            )
+            self.status = to_status
+            self.save()
+
+    def assign(self, assignee, actor=None):
+        self._transition("assigned", actor)  # guard runs first
+        self.assignee = assignee
+        self.save(update_fields=["assignee"])
+
+    def escalate(self, actor=None, note=""):
+        self.escalated_at = timezone.now()
+        self._transition("escalated", actor, note)
+
+    def resolve(self, actor=None):
+        self.resolved_at = timezone.now()
+        self._transition("resolved", actor)
+
+    def close(self, actor=None):
+        self.closed_at = timezone.now()
+        self._transition("closed", actor)
+
+
+class TicketEvent(models.Model):
+    ticket = models.ForeignKey("Ticket", on_delete=models.CASCADE, related_name="events")
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    from_status = models.CharField(max_length=20)
+    to_status = models.CharField(max_length=20)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"ticket {self.ticket_id}: {self.from_status} -> {self.to_status}"
+
+
+class Comment(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    body = models.TextField()
+    is_internal = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"comment by {self.author} on ticket {self.ticket_id}"
