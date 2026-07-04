@@ -75,7 +75,12 @@ the unassigned queue, managers everything. Objects outside your scope return 404
 ## Transitions and errors
 
 Legal moves: `open→assigned`, `open/assigned→escalated`, `assigned/escalated→resolved`,
-`resolved→closed`. An illegal move is a 400 with the reason:
+`resolved→closed`. Each action is also role-gated (403 when your role can't perform
+it): managers assign anyone while agents may only claim tickets for themselves;
+escalation is manager-only; resolve is the assigned agent or a manager; close is the
+ticket's requester or a manager. `is_internal` comments are rejected from requesters.
+
+An illegal move is a 400 with the reason:
 
 ```bash
 curl -X POST localhost:8000/api/v1/tickets/1/close/ -H "Authorization: Bearer $TOKEN"

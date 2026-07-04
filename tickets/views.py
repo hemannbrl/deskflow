@@ -60,11 +60,20 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def assign(self, request, pk=None):
-        """Assign the ticket to a user (open -> assigned)."""
+        """Assign the ticket (open -> assigned). Managers assign anyone; agents
+        may only claim a ticket for themselves."""
         ticket = self.get_object()
         assignee_id = request.data.get("assignee")
         if not assignee_id:
             return Response({"detail": "assignee is required"}, status=400)
+        r = role(request.user)
+        if r == "agent":
+            if str(assignee_id) != str(request.user.id):
+                return Response(
+                    {"detail": "agents may only assign tickets to themselves"}, status=403
+                )
+        elif r != "manager":
+            return Response({"detail": "only agents and managers can assign tickets"}, status=403)
         assignee = get_object_or_404(User, pk=assignee_id)
         try:
             ticket.assign(assignee, actor=request.user)
@@ -74,8 +83,11 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def escalate(self, request, pk=None):
-        """Escalate the ticket, with an optional note."""
+        """Escalate the ticket, with an optional note. Managers only — automatic
+        escalation is the SLA job's."""
         ticket = self.get_object()
+        if role(request.user) != "manager":
+            return Response({"detail": "only managers can escalate tickets"}, status=403)
         try:
             ticket.escalate(actor=request.user, note=request.data.get("note", ""))
         except TransitionError as e:
@@ -84,8 +96,14 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def resolve(self, request, pk=None):
-        """Mark the ticket resolved (assigned/escalated -> resolved)."""
+        """Mark the ticket resolved (assigned/escalated -> resolved). The assigned
+        agent or a manager."""
         ticket = self.get_object()
+        r = role(request.user)
+        if not (r == "manager" or (r == "agent" and ticket.assignee_id == request.user.id)):
+            return Response(
+                {"detail": "only the assigned agent or a manager can resolve"}, status=403
+            )
         try:
             ticket.resolve(actor=request.user)
         except TransitionError as e:
@@ -94,8 +112,10 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def close(self, request, pk=None):
-        """Close a resolved ticket."""
+        """Close a resolved ticket. The requester confirming their fix, or a manager."""
         ticket = self.get_object()
+        if not (role(request.user) == "manager" or ticket.requester_id == request.user.id):
+            return Response({"detail": "only the requester or a manager can close"}, status=403)
         try:
             ticket.close(actor=request.user)
         except TransitionError as e:
@@ -115,6 +135,11 @@ class TicketViewSet(viewsets.ModelViewSet):
         if request.method == "POST":
             serializer = CommentSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
+            if serializer.validated_data.get("is_internal") and role(request.user) not in (
+                "agent",
+                "manager",
+            ):
+                return Response({"detail": "internal notes are restricted to staff"}, status=403)
             serializer.save(ticket=ticket, author=request.user)
             return Response(serializer.data, status=201)
         comments = ticket.comments.all()

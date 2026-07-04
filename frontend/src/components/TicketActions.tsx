@@ -48,9 +48,11 @@ export default function TicketActions({ ticket, onChanged }: Props) {
   }
 
   const canAssign = isStaff && ticket.status === "open";
-  const canEscalate = isStaff && (ticket.status === "open" || ticket.status === "assigned");
+  const canEscalate =
+    role === "manager" && (ticket.status === "open" || ticket.status === "assigned");
   const canResolve =
-    isStaff && (ticket.status === "assigned" || ticket.status === "escalated");
+    (role === "manager" || (role === "agent" && ticket.assignee === user.id)) &&
+    (ticket.status === "assigned" || ticket.status === "escalated");
   const canClose =
     ticket.status === "resolved" && (role === "manager" || ticket.requester === user.id);
 

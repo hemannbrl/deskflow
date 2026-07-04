@@ -12,6 +12,7 @@ see `.env.example`). No secret is committed.
 | `DJANGO_ALLOWED_HOSTS` | comma-separated hosts | *(empty)* |
 | `POSTGRES_DB/USER/PASSWORD/HOST/PORT` | database | `deskflow`/`postgres`/…/`localhost`/`5432` |
 | `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` | Redis | `redis://localhost:6379/0` and `/1` |
+| `REDIS_CACHE_URL` | shared cache (throttle counters) | `redis://localhost:6379/2` |
 | `CORS_ALLOWED_ORIGINS` | comma-separated frontend origins | *(empty — nothing allowed)* |
 | `DJANGO_SECURE_SSL_REDIRECT` | force HTTPS behind the proxy | `False` |
 | `DJANGO_HSTS_SECONDS` | HSTS max-age (enables preload when > 0) | `0` |

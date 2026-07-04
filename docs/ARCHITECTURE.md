@@ -66,11 +66,14 @@ objects 404 rather than 403), and object permissions guard writes.
 
 | role | sees | can |
 |------|------|-----|
-| requester | own tickets | create, comment, close own resolved tickets |
-| agent | assigned to them + unassigned queue | work tickets, internal notes, transitions |
-| manager | everything | everything, incl. assigning any user |
+| requester | own tickets | create, comment, close their own resolved tickets |
+| agent | assigned to them + unassigned queue | self-claim from the queue, resolve their assigned tickets, internal notes |
+| manager | everything | assign anyone, escalate, resolve, close |
 
-Internal comments are filtered out server-side for requesters.
+Escalation is manager-only by hand — otherwise it's the SLA job's. Each action
+endpoint enforces its role rule server-side (403 with the reason); the UI only decides
+which buttons to render. Internal comments are rejected from requesters on write and
+filtered out for them on read.
 
 ## SLA automation
 

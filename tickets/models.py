@@ -80,13 +80,18 @@ class Ticket(models.Model):
         return f"#{self.pk} {self.title}"
 
     def _transition(self, to_status, actor=None, note=""):
-        if (self.status, to_status) not in ALLOWED:
-            raise TransitionError(f"cannot go {self.status} -> {to_status}")
         with transaction.atomic():
+            # Lock the row and re-read status so concurrent transitions (two agents,
+            # or an agent racing the SLA job) serialize instead of double-firing.
+            current = (
+                Ticket.objects.select_for_update().values_list("status", flat=True).get(pk=self.pk)
+            )
+            if (current, to_status) not in ALLOWED:
+                raise TransitionError(f"cannot go {current} -> {to_status}")
             TicketEvent.objects.create(
                 ticket=self,
                 actor=actor,
-                from_status=self.status,
+                from_status=current,
                 to_status=to_status,
                 note=note,
             )
