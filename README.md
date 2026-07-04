@@ -44,6 +44,13 @@ methods a user would. Config is read from `.env`.
 
 SLA windows by priority: urgent 4h, high 8h, normal 24h, low 72h.
 
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — components, data model, the state
+  machine, roles, and the SLA automation
+- [`docs/API.md`](docs/API.md) — endpoint reference with curl examples
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — configuration, production setup, and CI
+
 ## Running Locally
 
 Requires PostgreSQL and Redis — start both with `docker compose up -d`.
@@ -60,6 +67,9 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+Optional: `python manage.py seed_demo` fills the app with demo users and tickets in
+every lifecycle state (all demo logins use password `deskflow123`).
 
 In separate terminals, for SLA escalation and auto-close:
 
