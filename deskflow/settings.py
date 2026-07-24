@@ -8,8 +8,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+
+# `.get(key, default)` only falls back when the key is missing, not when it's
+# present-but-empty (as `.env.example` ships it), so use an `or` fallback. A dev
+# key keeps clone-and-run working; production (DEBUG=False) still requires a real one.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or (
+    "django-insecure-dev-key-change-me" if DEBUG else ""
+)
+if not SECRET_KEY:
+    raise RuntimeError("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is not True")
 ALLOWED_HOSTS = [h for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
 
 
