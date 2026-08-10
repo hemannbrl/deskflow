@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from tickets.views import (
+    CannedResponseViewSet,
     LogoutView,
     MeView,
     RegisterView,
@@ -14,6 +15,7 @@ from tickets.views import (
 
 router = DefaultRouter()
 router.register("tickets", TicketViewSet, basename="ticket")
+router.register("canned-responses", CannedResponseViewSet, basename="cannedresponse")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

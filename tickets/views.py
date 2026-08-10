@@ -6,9 +6,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView
 
-from .models import Ticket, TransitionError
-from .permissions import IsManagerOrAssignedOrOwner, role
+from .models import CannedResponse, Ticket, TransitionError
+from .permissions import IsManagerOrAssignedOrOwner, IsStaffReadManagerWrite, role
 from .serializers import (
+    CannedResponseSerializer,
     CommentSerializer,
     MeSerializer,
     RegisterSerializer,
@@ -160,3 +161,14 @@ class TicketViewSet(viewsets.ModelViewSet):
         if role(request.user) == "requester":
             comments = comments.filter(is_internal=False)
         return Response(CommentSerializer(comments, many=True).data)
+
+
+class CannedResponseViewSet(viewsets.ModelViewSet):
+    """The staff reply-template library. Agents and managers read; managers curate."""
+
+    queryset = CannedResponse.objects.all()
+    serializer_class = CannedResponseSerializer
+    permission_classes = [permissions.IsAuthenticated, IsStaffReadManagerWrite]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)

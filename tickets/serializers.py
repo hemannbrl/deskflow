@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Comment, Ticket, TicketEvent
+from .models import CannedResponse, Comment, Ticket, TicketEvent
 
 User = get_user_model()
 
@@ -74,3 +74,17 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ("id", "ticket", "author", "author_username", "body", "is_internal", "created_at")
         read_only_fields = ("ticket", "author")
+
+
+class CannedResponseSerializer(serializers.ModelSerializer):
+    """A reusable staff reply template."""
+
+    created_by_username = serializers.SerializerMethodField()
+
+    def get_created_by_username(self, obj) -> str | None:
+        return obj.created_by.username if obj.created_by else None
+
+    class Meta:
+        model = CannedResponse
+        fields = ("id", "title", "body", "created_by", "created_by_username", "updated_at")
+        read_only_fields = ("created_by",)

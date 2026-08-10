@@ -150,3 +150,23 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"comment by {self.author} on ticket {self.ticket_id}"
+
+
+class CannedResponse(models.Model):
+    """A reusable reply template for staff. Managers curate the library; agents
+    read it and paste a template into a comment (the API stores plain text, so
+    'using' one is just posting its body)."""
+
+    title = models.CharField(max_length=200, unique=True)
+    body = models.TextField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["title"]
+
+    def __str__(self):
+        return self.title
