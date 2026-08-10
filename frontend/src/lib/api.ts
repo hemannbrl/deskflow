@@ -1,6 +1,6 @@
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "./tokens";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /** A non-2xx response; `data` is the DRF error body ({detail} or field errors). */
 export class ApiError extends Error {
@@ -30,18 +30,31 @@ export class ApiError extends Error {
   }
 }
 
+let inFlightRefresh: Promise<boolean> | null = null;
+
 async function refreshAccessToken(): Promise<boolean> {
-  const refresh = getRefreshToken();
-  if (!refresh) return false;
-  const res = await fetch(`${BASE_URL}/api/auth/token/refresh/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh }),
+  // Single-flight: several requests 401-ing at once share ONE refresh. With
+  // refresh-token rotation the server blacklists the old token on first use, so
+  // parallel refreshes would send an already-dead token and force a spurious
+  // logout.
+  if (inFlightRefresh) return inFlightRefresh;
+  inFlightRefresh = (async () => {
+    const refresh = getRefreshToken();
+    if (!refresh) return false;
+    const res = await fetch(`${BASE_URL}/api/auth/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) return false;
+    // Rotation returns a new refresh token; persist it or the next refresh fails.
+    const data: { access: string; refresh?: string } = await res.json();
+    setTokens(data.access, data.refresh);
+    return true;
+  })().finally(() => {
+    inFlightRefresh = null;
   });
-  if (!res.ok) return false;
-  const data: { access: string } = await res.json();
-  setTokens(data.access);
-  return true;
+  return inFlightRefresh;
 }
 
 /** JSON fetch against the API: attaches the JWT, refreshes once on 401. */

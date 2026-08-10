@@ -96,7 +96,9 @@ class Ticket(models.Model):
                 note=note,
             )
             self.status = to_status
-            self.save()
+            # Save only status so a concurrent write to priority/title/assignee on
+            # a stale in-memory copy of this ticket isn't reverted by a full save.
+            self.save(update_fields=["status"])
 
     def assign(self, assignee, actor=None):
         self._transition("assigned", actor)  # guard runs first
@@ -104,16 +106,19 @@ class Ticket(models.Model):
         self.save(update_fields=["assignee"])
 
     def escalate(self, actor=None, note=""):
-        self.escalated_at = timezone.now()
         self._transition("escalated", actor, note)
+        self.escalated_at = timezone.now()
+        self.save(update_fields=["escalated_at"])
 
     def resolve(self, actor=None):
-        self.resolved_at = timezone.now()
         self._transition("resolved", actor)
+        self.resolved_at = timezone.now()
+        self.save(update_fields=["resolved_at"])
 
     def close(self, actor=None):
-        self.closed_at = timezone.now()
         self._transition("closed", actor)
+        self.closed_at = timezone.now()
+        self.save(update_fields=["closed_at"])
 
 
 class TicketEvent(models.Model):

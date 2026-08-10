@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "corsheaders",
     "tickets",
@@ -113,8 +114,19 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.UserRateThrottle",
         "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"user": "1000/day", "anon": "20/hour"},
+    # The 'auth' scope is applied to login/register/logout so brute-forcing
+    # credentials doesn't ride the coarse global anon limit.
+    "DEFAULT_THROTTLE_RATES": {"user": "1000/day", "anon": "20/hour", "auth": "10/min"},
+}
+
+SIMPLE_JWT = {
+    # Each refresh issues a new refresh token and blacklists the old one, so a
+    # leaked refresh token stops working once the real client refreshes, and
+    # logout (the blacklist endpoint) can revoke a session server-side.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 SPECTACULAR_SETTINGS = {
