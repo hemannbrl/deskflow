@@ -1,7 +1,12 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Comment, Ticket, TicketEvent
+from .models import Attachment, Comment, Ticket, TicketEvent
+
+MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024
+ALLOWED_ATTACHMENT_EXTENSIONS = {
+    "png", "jpg", "jpeg", "gif", "webp", "pdf", "txt", "log", "csv", "zip",
+}
 
 User = get_user_model()
 
@@ -74,3 +79,42 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ("id", "ticket", "author", "author_username", "body", "is_internal", "created_at")
         read_only_fields = ("ticket", "author")
+
+
+class AttachmentSerializer(serializers.ModelSerializer):
+    """A file on a ticket. The response never exposes the storage path — files
+    are fetched through the download endpoint."""
+
+    uploaded_by_username = serializers.SerializerMethodField()
+    file = serializers.FileField(write_only=True)
+
+    def get_uploaded_by_username(self, obj) -> str | None:
+        return obj.uploaded_by.username if obj.uploaded_by else None
+
+    class Meta:
+        model = Attachment
+        fields = (
+            "id",
+            "file",
+            "original_name",
+            "size",
+            "uploaded_by",
+            "uploaded_by_username",
+            "created_at",
+        )
+        read_only_fields = ("original_name", "size", "uploaded_by")
+
+    def validate_file(self, value):
+        if value.size > MAX_ATTACHMENT_BYTES:
+            raise serializers.ValidationError("attachments are limited to 5 MB")
+        extension = value.name.rsplit(".", 1)[-1].lower() if "." in value.name else ""
+        if extension not in ALLOWED_ATTACHMENT_EXTENSIONS:
+            allowed = ", ".join(sorted(ALLOWED_ATTACHMENT_EXTENSIONS))
+            raise serializers.ValidationError(f"file type not allowed (allowed: {allowed})")
+        return value
+
+    def create(self, validated_data):
+        upload = validated_data["file"]
+        validated_data["original_name"] = upload.name
+        validated_data["size"] = upload.size
+        return super().create(validated_data)

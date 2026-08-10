@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, viewsets
 from rest_framework.decorators import action
@@ -9,6 +10,7 @@ from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairVi
 from .models import Ticket, TransitionError
 from .permissions import IsManagerOrAssignedOrOwner, role
 from .serializers import (
+    AttachmentSerializer,
     CommentSerializer,
     MeSerializer,
     RegisterSerializer,
@@ -160,3 +162,27 @@ class TicketViewSet(viewsets.ModelViewSet):
         if role(request.user) == "requester":
             comments = comments.filter(is_internal=False)
         return Response(CommentSerializer(comments, many=True).data)
+
+    @action(detail=True, methods=["get", "post"])
+    def attachments(self, request, pk=None):
+        """List the ticket's attachments or upload one (multipart, field 'file').
+        Anyone who can see the ticket can attach to it."""
+        ticket = self.get_object()
+        if request.method == "POST":
+            serializer = AttachmentSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(ticket=ticket, uploaded_by=request.user)
+            return Response(serializer.data, status=201)
+        return Response(AttachmentSerializer(ticket.attachments.all(), many=True).data)
+
+    @action(detail=True, methods=["get"], url_path=r"attachments/(?P<attachment_id>\d+)/download")
+    def download_attachment(self, request, pk=None, attachment_id=None):
+        """Stream one attachment. get_object() re-runs the ticket permission
+        check, so a requester can never fetch files off someone else's ticket."""
+        ticket = self.get_object()
+        attachment = get_object_or_404(ticket.attachments, pk=attachment_id)
+        return FileResponse(
+            attachment.file.open("rb"),
+            as_attachment=True,
+            filename=attachment.original_name,
+        )

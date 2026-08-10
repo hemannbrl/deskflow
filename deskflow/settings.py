@@ -95,6 +95,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Ticket attachments land here; they are only served through the authenticated
+# download endpoint, never as public MEDIA urls.
+MEDIA_ROOT = BASE_DIR / "media"
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},

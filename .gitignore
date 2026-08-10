@@ -17,3 +17,4 @@ celerybeat.pid
 .idea/
 .vscode/
 .DS_Store
+media/

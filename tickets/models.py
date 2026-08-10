@@ -150,3 +150,23 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"comment by {self.author} on ticket {self.ticket_id}"
+
+
+class Attachment(models.Model):
+    """A file on a ticket. Stored under MEDIA_ROOT but only readable through
+    the authenticated download endpoint, which re-checks ticket access."""
+
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="attachments")
+    file = models.FileField(upload_to="attachments/%Y/%m/")
+    original_name = models.CharField(max_length=255)
+    size = models.PositiveIntegerField()
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.original_name} on ticket {self.ticket_id}"
