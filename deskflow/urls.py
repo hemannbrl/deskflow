@@ -8,12 +8,14 @@ from tickets.views import (
     LogoutView,
     MeView,
     RegisterView,
+    SlaPolicyViewSet,
     ThrottledTokenObtainPairView,
     TicketViewSet,
 )
 
 router = DefaultRouter()
 router.register("tickets", TicketViewSet, basename="ticket")
+router.register("sla-policies", SlaPolicyViewSet, basename="slapolicy")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

@@ -5,6 +5,16 @@ def role(user):
     return getattr(getattr(user, "profile", None), "role", None)
 
 
+class IsStaffReadManagerWrite(permissions.BasePermission):
+    """Agents and managers can read; only managers can create/edit/delete."""
+
+    def has_permission(self, request, view):
+        r = role(request.user)
+        if request.method in permissions.SAFE_METHODS:
+            return r in ("agent", "manager")
+        return r == "manager"
+
+
 class IsManagerOrAssignedOrOwner(permissions.BasePermission):
     """Managers touch everything; agents their assigned tickets plus the unassigned
     queue; requesters their own. Role rules per action live in the viewset."""

@@ -6,12 +6,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView
 
-from .models import Ticket, TransitionError
-from .permissions import IsManagerOrAssignedOrOwner, role
+from .models import SlaPolicy, Ticket, TransitionError
+from .permissions import IsManagerOrAssignedOrOwner, IsStaffReadManagerWrite, role
 from .serializers import (
     CommentSerializer,
     MeSerializer,
     RegisterSerializer,
+    SlaPolicySerializer,
     TicketEventSerializer,
     TicketSerializer,
 )
@@ -160,3 +161,18 @@ class TicketViewSet(viewsets.ModelViewSet):
         if role(request.user) == "requester":
             comments = comments.filter(is_internal=False)
         return Response(CommentSerializer(comments, many=True).data)
+
+
+class SlaPolicyViewSet(viewsets.ModelViewSet):
+    """Per-priority SLA windows. Agents read them; managers tune them. New
+    tickets pick up the current policy; existing due dates are not rewritten."""
+
+    queryset = SlaPolicy.objects.all()
+    serializer_class = SlaPolicySerializer
+    permission_classes = [permissions.IsAuthenticated, IsStaffReadManagerWrite]
+
+    def perform_create(self, serializer):
+        serializer.save(updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)

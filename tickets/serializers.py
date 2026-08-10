@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Comment, Ticket, TicketEvent
+from .models import Comment, SlaPolicy, Ticket, TicketEvent
 
 User = get_user_model()
 
@@ -74,3 +74,17 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ("id", "ticket", "author", "author_username", "body", "is_internal", "created_at")
         read_only_fields = ("ticket", "author")
+
+
+class SlaPolicySerializer(serializers.ModelSerializer):
+    """A per-priority SLA window in hours; overrides the built-in default."""
+
+    class Meta:
+        model = SlaPolicy
+        fields = ("id", "priority", "hours", "updated_by", "updated_at")
+        read_only_fields = ("updated_by",)
+
+    def validate_hours(self, value):
+        if value < 1:
+            raise serializers.ValidationError("the SLA window must be at least one hour")
+        return value

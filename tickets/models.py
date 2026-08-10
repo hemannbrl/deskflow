@@ -150,3 +150,23 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"comment by {self.author} on ticket {self.ticket_id}"
+
+
+class SlaPolicy(models.Model):
+    """A manager-set response window per priority. sla.due_at consults this
+    table first and falls back to the built-in defaults, so deployments work
+    with an empty table and managers can tune windows without a release."""
+
+    priority = models.CharField(max_length=20, choices=Ticket.Priority.choices, unique=True)
+    hours = models.PositiveIntegerField()
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["priority"]
+        verbose_name_plural = "SLA policies"
+
+    def __str__(self):
+        return f"{self.priority}: {self.hours}h"
